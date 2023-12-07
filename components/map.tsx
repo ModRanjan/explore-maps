@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   GoogleMap,
   Marker,
@@ -17,10 +17,27 @@ export default function Map() {
   const [office, setOffice] = useState<LatLngLiteral>();
   const [directions, setDirections] = useState<DirectionsResult>();
   const mapRef = useRef<GoogleMap>();
-  const center = useMemo<LatLngLiteral>(
-    () => ({ lat: 43.45, lng: -80.49 }),
-    []
-  );
+  const center = useMemo<LatLngLiteral>(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          console.log("Latitude is :", position.coords.latitude);
+          console.log("Longitude is :", position.coords.longitude);
+
+          return {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+        },
+        function (error) {
+          alert(error.message);
+          console.error("Error Code = " + error.code + " - " + error.message);
+        }
+      );
+    }
+
+    return { lat: 22.6141316, lng: 88.4187564 };
+  }, [navigator]);
 
   const options = useMemo<MapOptions>(
     () => ({
@@ -52,6 +69,8 @@ export default function Map() {
     );
   };
 
+  console.log("directions: ", center);
+
   return (
     <div className="container">
       <div className="controls">
@@ -62,6 +81,7 @@ export default function Map() {
             mapRef.current?.panTo(position);
           }}
         />
+
         {!office && <p>Enter the address of your office.</p>}
         {directions && <Distance leg={directions.routes[0].legs[0]} />}
       </div>
@@ -152,7 +172,7 @@ const farOptions = {
 
 const generateHouses = (position: LatLngLiteral) => {
   const _houses: Array<LatLngLiteral> = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 20; i++) {
     const direction = Math.random() < 0.5 ? -2 : 2;
     _houses.push({
       lat: position.lat + Math.random() / direction,
